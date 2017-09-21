@@ -104,4 +104,4 @@ pow_cont:	add Rc,Rb	; 82 [01010010]: 11001110
 
 	.org 255
 ; Change this to select a different programme to run in a continuous loop
-progno:		#1		;255 [11111111]: 00000001
+progno:		#0		;255 [11111111]: 00000001

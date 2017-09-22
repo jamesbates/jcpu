@@ -7,7 +7,7 @@
 
 #define YYSTYPE union parsenode *
 
-#include "asm.tab.h"
+#include "assembler.tab.h"
 
 char *stolower(char *in) {
 

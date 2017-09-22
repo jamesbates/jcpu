@@ -25,6 +25,8 @@ int yywrap()
 int main(void)
 {
         yyparse();
+	assemble_program();
+	output_program();
 } 
 
 %}
@@ -44,7 +46,6 @@ program:
 	program line
 	{
 		handle_instruction(&$2->instruction);
-		print_instruction(&$2->instruction);
 		lineno++;
 	}
 	|

@@ -6,7 +6,8 @@
 extern unsigned int out_address;
 
 void handle_instruction(struct instruction *i);
-void print_instruction(struct instruction *i);
+void assemble_program(void);
+void output_program(void);
 
 #endif
 

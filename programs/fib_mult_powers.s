@@ -19,7 +19,7 @@ p_select:	data Rb,#3	;  2 [00000010]: 00001111
 				; 14 [00001110]: 00000010
 
 ; Programme entry points table (4 entries)
-progtab:	#p_aternate	; 15 [00001111]: 00010011
+progtab:	#p_alternate	; 15 [00001111]: 00010011
 		#p_fibonacci	; 16 [00010000]: 00100011
 		#p_multtables	; 17 [00010001]: 00101111
 		#p_powerseries	; 18 [00010010]: 00111011

@@ -34,6 +34,9 @@ struct instruction {
     struct operand r_operand;
     char *label;
     unsigned int address;
+    uint8_t length;
+    uint8_t byte0;
+    uint8_t byte1;
 };
     
 union parsenode {

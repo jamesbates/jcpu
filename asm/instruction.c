@@ -9,12 +9,47 @@ unsigned int instruction_count = 0;
 struct instruction instructions[256];
 
 
+#define is_imm(o) (o.type == IMMEDIATE_VAL || o.type == IMMEDIATE_SYMBOL)
+
+
+void handle_instruction(struct instruction *i) {
+
+    if (is_imm(i->l_operand) && is_imm(i->r_operand)) {
+
+	asmerror("Instruction cannot have two immediate operands", NULL);
+    }
+
+    if (out_address >= 256) {
+        char buf[5];
+	sprintf(buf, "%d", out_address);
+
+        asmerror("Memory overflow. Address %s exceeds memory limit(256 bytes).", buf);
+    }
+    i->address = out_address;
+    if (i->label) {
+
+        add_symbol(i->label, i->address);
+    }
+
+    if ((i->mnemonic != LITERAL) && (is_imm(i->l_operand) || is_imm(i->r_operand))) {
+
+        i->length = 2;
+    } else {
+
+	i->length = 1;
+    }
+
+    out_address += i->length;
+
+    instructions[instruction_count++] = (*i);
+}
+
 #define CLASS_MOV 0b00000000;
 #define CLASS_LOD 0b01000000;
 #define CLASS_STO 0b10000000;
 #define CLASS_ALU 0b11000000;
 
-static inline reg_code(enum reg reg) {
+static inline uint8_t reg_code(enum reg reg) {
 
     switch (reg) {
 
@@ -28,13 +63,12 @@ static inline reg_code(enum reg reg) {
 }
 
 #define SREG(reg) reg_code(reg)
-#define DREG(reg) (reg_code(reg) << 3
+#define DREG(reg) (reg_code(reg) << 3)
 #define SIMM 0b111
 #define DIMM 0b111000
 #define SSPi 0b110
 #define DSPi 0b110000
-#define ALUS(S) (S << 3)
-#define ALUC 0b00100000
+#define ALU(carry, S) ((carry ? 0b00100000 : 0) | (S << 2))
 
 static uint8_t instruction_class(enum mnemonic mnemonic) {
 
@@ -57,7 +91,7 @@ static uint8_t instruction_class(enum mnemonic mnemonic) {
 	case STO:
 	case PUSH:
 	case CALL:
-		return CLASS_CALL;
+		return CLASS_STO;
 	case ADD:
 	case ADC:
 	case SUB:
@@ -72,139 +106,188 @@ static uint8_t instruction_class(enum mnemonic mnemonic) {
     }
 }
 
-static void print_register(enum reg reg) {
+static void assemble_imm(uint8_t *dest, struct operand *o) {
 
-    switch(reg) {
+    if (o->type == IMMEDIATE_SYMBOL) {
 
-        case RA:
-		printf("Ra");
-		break;
-	case RB:
-		printf("Rb");
-		break;
-	case RC:
-		printf("Rc");
-		break;
-	case RD:
-		printf("Rd");
-		break;
-	case SP:
-		printf("SP");
-		break;
-	case PC:
-		printf("PC");
-		break;
-    }
-}
+        unsigned int v = find_symbol(o->value.immsymbol);
+	if (v == -1) {
 
-static void print_operand(struct operand *o) {
-
-    if (o->is_indirect) {
-
-        printf("[");
-    }
-
-    if (o->type == REGISTER) {
-
-        print_register(o->value.reg);
-    } else if (o->type == IMMEDIATE_VAL) {
-
-        printf("#%d", o->value.immvalue);
+	    asmerror("Undefined symbol %s", o->value.immsymbol);
+	}
+	*dest = v;
     } else {
 
-        printf("#%s", o->value.immsymbol);
-    }
-
-    if (o->is_indirect) {
-
-        printf("]");
+        *dest = o->value.immvalue;
     }
 }
 
-void print_binary(int number)
-{
-    if (number) {
-        print_binary(number >> 1);
-        printf("%c", (number & 1) ? '1' : '0');
-    }
-}
 
-void output_instruction(struct instruction *i) {
 
-    printf("%03d [", i->address);
-    print_binary(i->address);
-    printf("] ");
+static void assemble_dest_operand(struct instruction *i) {
 
     switch (i->mnemonic) {
-
+        case MOV:
+        case LOD:
+        case STO:
+        case POP:
+        case DATA:
+            if (is_imm(i->l_operand)) {
+                i->byte0 |= DIMM;
+            } else {
+                i->byte0 |= DREG(i->l_operand.value.reg);
+            }
+            return;
+         case PUSH:
+         case CALL:
+            i->byte0 |= DSPi;
+            return;
+        case JMP:
+        case RET:
+        case HLT:
+            i->byte0 |= DREG(PC);
+            return;
         case NOP:
-		print_binary(CLASS_MOV | SREG(RA) | DREG(RA));
-		print_instruction(i);
-		break;
-	case HLT:
-		print_binary(CLASS_MOV | SREG(PC) | DREG(PC));
-		print_instruction(i);
-		break;
-	case MOV:
-		print_binary(CLASS_MOV | SREG(i->r_operand.reg) | DREG(i->l_operand.reg));
-		print_instruction(i);
-		break;
-	case DATA:
-		print_binary(CLASS_MOV | DREG(i->l_operand.reg) | SIMM);
-		print_instruction(i);
-		printf("%03d [", i->address+1);
-    		print_binary(i->address+1);
-    		printf("] ");
-		print_binary(i->
-	case JMP:
-	case JZ:
-	case JO:
-	case JN:
-	case JC:
-	    printf("00");
-	    break;
+            i->byte0 |= DREG(RA);
+            return;
+        case JZ:
+        case JO:
+        case JN:
+        case JC:
+            i->byte0 |= DIMM;
+            return;
+        /* ALU operations*/
+        default:
+            i->byte0 |= SREG(i->l_operand.value.reg);
     }
 }
 
 
-void print_instruction(struct instruction *i) {
-    if (i->label) {
-    	printf("\t%s:\t", i->label);
-    } else {
-	printf("\t\t\t");
+static void assemble_src_operand(struct instruction *i) {
+    switch (i->mnemonic) {
+        case MOV:
+        case LOD:
+        case STO:
+        case DATA:
+            if (is_imm(i->r_operand)) {
+                i->byte0 |= SIMM;
+            } else {
+                i->byte0 |= SREG(i->r_operand.value.reg);
+            }
+            return;
+         case PUSH:
+         case JMP:
+             if (is_imm(i->l_operand)) {
+                i->byte0 |= SIMM;
+            } else {
+                i->byte0 |= SREG(i->l_operand.value.reg);
+            }
+            return;
+         case CALL:
+         case HLT:
+            i->byte0 |= SREG(PC);
+            return;
+        case POP:
+        case RET:
+            i->byte0 |= SSPi;
+            return;
+        case NOP:
+            i->byte0 |= SREG(RA);
+            return;
+        case JZ:
+            i->byte0 |= 0b001;
+            return;
+        case JO:
+            i->byte0 |= 0b100;
+            return;
+        case JN:
+            i->byte0 |= 0b010;
+            return;
+        case JC:
+            i->byte0 |= 0b000;
+            return;
     }
-
-    print_mnemonic(i->mnemonic);
-    if (i->l_operand.type != NONE) {
-
-        print_operand(&i->l_operand);
-	if (i->r_operand.type != NONE) {
-
-	    printf(", ");
-	    print_operand(&i->r_operand);
-	}
-    }
-    printf("\n");
 }
 
-void handle_instruction(struct instruction *i) {
+static void assemble_alu_instruction(struct instruction *i) {
+    switch (i->mnemonic) {
 
-    if ((i->l_operand.type == IMMEDIATE_VAL || i->l_operand.type == IMMEDIATE_SYMBOL) && (i->r_operand.type == IMMEDIATE_VAL || i->r_operand.type == IMMEDIATE_SYMBOL)) {
+        case ADD:
+            i->byte0 |= ALU(false,0b011);
+            return;
+        case ADC:
+            i->byte0 |= ALU(true,0b011);
+            return;
+        case SUB:
+            i->byte0 |= ALU(false, 0b010);
+            return;
+	case SBC:
+	    i->byte0 |= ALU(true, 0b010);
+	    return;
+        case INC:
+            i->byte0 |= ALU(false, 0b000);
+            return;
+	case DEC:
+	    i->byte0 |= ALU(true, 0b000);
+	    return;
+	case XOR:
+	    i->byte0 |= ALU(false, 0b100);
+	    return;
+	case OR:
+	    i->byte0 |= ALU(false, 0b101);
+	    return;
+	case AND:
+	    i->byte0 |= ALU(false, 0b110);
+	    return;
+	case NOT:
+	    i->byte0 |= ALU(false, 0b111);
+	    return;
+    }
+}
 
-	asmerror("Instruction cannot have two immediate operands", NULL);
+
+static void assemble_instruction(struct instruction *i) {
+
+    if (i->mnemonic == LITERAL) {
+
+        assemble_imm(&i->byte0, &i->l_operand);
+        return;
     }
 
-    if (out_address >= 256) {
-        char buf[5];
-	sprintf(buf, "%d", out_address);
+    i->byte0 = instruction_class(i->mnemonic);
 
-        asmerror("Memory overflow. Address %s exceeds memory limit(256 bytes).", buf);
-    }
-    i->address = out_address;
-    if (i->label) {
+    assemble_dest_operand(i);
+    assemble_src_operand(i);
+    assemble_alu_instruction(i);
 
-        add_symbol(i->label, i->address);
+    if (is_imm(i->l_operand)) {
+
+        assemble_imm(&i->byte1, &i->l_operand);
     }
+
+    if (is_imm(i->r_operand)) {
+
+        assemble_imm(&i->byte1, &i->r_operand);
+    }
+}
+
+void assemble_program() {
+
+    for (int c=0; c < instruction_count; c++) {
+
+        assemble_instruction(&instructions[c]);
+    }
+}
+
+
+
+
+static void print_binary(uint8_t number)
+{
+    for (int8_t bit = 7; bit >=0; bit--) {
+        printf("%c", (number & (1 << bit)) ? '1' : '0');
+    }
+}
 
 static void print_mnemonic(enum mnemonic mnemonic) {
 
@@ -340,41 +423,11 @@ static void print_operand(struct operand *o) {
     }
 }
 
-void print_binary(int number)
-{
-    if (number) {
-        print_binary(number >> 1);
-        printf("%c", (number & 1) ? '1' : '0');
-    }
-}
-
-void output_instruction(struct instruction *i) {
-
-    printf("%03d [", i->address);
-    print_binary(i->address);
-    printf("] ");
-    switch (i->mnemonic) {
-
-        case NOP:
-	case HLT:
-	case MOV:
-	case DATA:
-	case JMP:
-	case JZ:
-	case JO:
-	case JN:
-	case JC:
-	    printf("00");
-	    break;
-    }
-}
-
-
-void print_instruction(struct instruction *i) {
+static void print_instruction(struct instruction *i) {
     if (i->label) {
     	printf("%s:\t", i->label);
     } else {
-	printf("\t\t");
+	printf("\t");
     }
 
     print_mnemonic(i->mnemonic);
@@ -390,31 +443,34 @@ void print_instruction(struct instruction *i) {
     printf("\n");
 }
 
-void handle_instruction(struct instruction *i) {
 
-    if ((i->l_operand.type == IMMEDIATE_VAL || i->l_operand.type == IMMEDIATE_SYMBOL) && (i->r_operand.type == IMMEDIATE_VAL || i->r_operand.type == IMMEDIATE_SYMBOL)) {
+static void output_instruction(struct instruction *i) {
 
-	asmerror("Instruction cannot have two immediate operands", NULL);
+    printf("%03d [", i->address);
+    print_binary(i->address);
+    printf("] ");
+    print_binary(i->byte0);
+    printf(" //\t");
+    print_instruction(i);
+    if (i->length == 2) {
+
+        printf("%03d [", i->address+1);
+    	print_binary(i->address+1);
+    	printf("] ");
+    	print_binary(i->byte1);
+    	printf("\n");
     }
-
-    if (out_address >= 256) {
-        char buf[5];
-	sprintf(buf, "%d", out_address);
-
-        asmerror("Memory overflow. Address %s exceeds memory limit(256 bytes).", buf);
-    }
-    i->address = out_address;
-    if (i->label) {
-
-        add_symbol(i->label, i->address);
-    }
-
-    if ((i->mnemonic != LITERAL) && (i->l_operand.type == IMMEDIATE_VAL || i->l_operand.type == IMMEDIATE_SYMBOL || i->r_operand.type == IMMEDIATE_VAL || i->r_operand.type == IMMEDIATE_SYMBOL)) {
-
-        out_address += 2;
-    } else {
-
-        out_address += 1;
-    }
-    instructions[instruction_count] = (*i);
 }
+
+void output_program() {
+
+    for (int c=0; c < instruction_count; c++) {
+
+        output_instruction(&instructions[c]);
+    }
+}
+
+
+
+
+

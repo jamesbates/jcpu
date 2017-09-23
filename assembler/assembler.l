@@ -25,7 +25,7 @@ char *stolower(char *in) {
 
 %%
 \n				return NEWLINE;
-[A-Za-z\_][A-Za-z0-9\_]+	yylval=parsenode_identifier(stolower(strdup(yytext))); return IDENTIFIER;
+[A-Za-z\_][A-Za-z0-9\_]*	yylval=parsenode_identifier(stolower(strdup(yytext))); return IDENTIFIER;
 [0-9]+				yylval=parsenode_value(atoi(yytext)); return NUMBER;
 \#				return HASH;
 \:				return COLON;

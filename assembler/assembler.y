@@ -14,7 +14,7 @@ int yyparse(void);
 
 void yyerror(const char *str)
 {
-        fprintf(stderr,"error: %s\n",str);
+        fprintf(stderr,"Line %d: error: %s\n",lineno,str);
 }
  
 int yywrap()

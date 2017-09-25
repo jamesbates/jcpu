@@ -1,4 +1,4 @@
-	mov SP,#0
+	data SP,#0
 loop:	pop Ra
 	jc #hlt
 	jmp #loop

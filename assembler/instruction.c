@@ -10,14 +10,109 @@ struct instruction instructions[256];
 
 
 #define is_imm(o) (o.type == IMMEDIATE_VAL || o.type == IMMEDIATE_SYMBOL)
+#define is_alu(o) ((!o.is_indirect) && o.type == REGISTER && (o.value.reg == RA || o.value.reg == RB || o.value.reg == RC || o.value.reg == RD))
 
-
-void handle_instruction(struct instruction *i) {
+void check_instruction_operands(struct instruction *i) {
 
     if (is_imm(i->l_operand) && is_imm(i->r_operand)) {
 
 	asmerror("Instruction cannot have two immediate operands", NULL);
     }
+
+    switch(i->mnemonic) {
+
+	case HLT:
+	case NOP:
+        case RET:
+	    if ((i->l_operand.type != NONE) || (i->r_operand.type != NONE)) {
+
+	        asmerror("Instruction does not support operands", NULL);
+	    }
+	    break;
+	case JC:
+	case JN:
+	case JZ:
+	case JO:
+	case LITERAL:
+	    if ((i->r_operand.type != NONE) || (!is_imm(i->l_operand)) || (i->l_operand.is_indirect)) {
+
+	        asmerror("Instruction requires one direct immediate operand", NULL);
+	    }
+	    break;
+	case JMP:
+	case PUSH:
+	    if ((i->l_operand.type == NONE) || (i->r_operand.type != NONE) || (i->l_operand.is_indirect)) {
+
+	        asmerror("Instruction requires one direct immediate or register operand", NULL);
+	    }
+	    break;
+	case POP:
+	    if ((i->l_operand.type != REGISTER) || (i->r_operand.type != NONE) || (i->l_operand.is_indirect)) {
+
+		asmerror("Instruction requires one direct register operand", NULL);
+	    }
+	    break;
+	case CALL:
+	    if ((i->l_operand.type != REGISTER) || (i->r_operand.type != NONE) || (i->l_operand.is_indirect) || (i->l_operand.value.reg != RC)) {
+
+	        asmerror("Instruction requires single Rc operand", NULL);
+	    }
+	    break;
+	case NOT:
+	case INC:
+	case DEC:
+	    if ((!is_alu(i->l_operand)) || (i->r_operand.type != NONE)) {
+
+	        asmerror("Instruction requires single direct ALU register operand", NULL);
+	   }
+	   break;
+	case MOV:
+	    if ((i->l_operand.type != REGISTER) || (i->l_operand.is_indirect) || (i->r_operand.type != REGISTER) || (i->r_operand.is_indirect)) {
+
+	        asmerror("Instruction requires two direct register operands", NULL);
+	    }
+	    break;
+	case DATA:
+	    if ((i->l_operand.type != REGISTER) || (i->l_operand.is_indirect) || (!is_imm(i->r_operand)) || (i->r_operand.is_indirect)) {
+
+		asmerror("Instruction requires one direct register and one direct immediate operand", NULL);
+	    }
+	    break;
+	case LOD:
+	    if ((i->l_operand.type != REGISTER) || (i->l_operand.is_indirect) || (i->r_operand.type == NONE) || (!i->r_operand.is_indirect)) {
+
+	        asmerror("Instruction requires one direct register and one indirect operand", NULL);
+	    }
+	    break;
+	case STO:
+	    if ((i->l_operand.type == NONE) || (!i->l_operand.is_indirect) || (i->r_operand.type == NONE) || (i->r_operand.is_indirect)) {
+
+	        asmerror("Instruction requires one indirect and one direct operand", NULL);
+	    }
+	    break;
+	case ADD:
+	case ADC:
+	case SUB:
+	case SBC:
+	case AND:
+	case OR:
+	case XOR:
+	    if ((!is_alu(i->l_operand)) || (!is_alu(i->r_operand)) || (i->r_operand.value.reg != RB)) {
+
+	        asmerror("Instruction requires direct ALU register and RB operands", NULL);
+	    }
+	    break;
+	default:
+	    asmerror("Unrecognized instruction.", NULL);
+    }
+}
+
+
+
+
+void handle_instruction(struct instruction *i) {
+
+    check_instruction_operands(i);
 
     if (out_address >= 256) {
         char buf[5];

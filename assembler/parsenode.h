@@ -23,7 +23,7 @@ enum mnemonic {
     DATA,MOV,JMP,JC,JN,JZ,JO,NOP,HLT,
     LOD,POP,RET,
     STO,PUSH,CALL,
-    INC,DEC,ADD,ADC,SUB,SBC,XOR,OR,AND,NOT,
+    INC,DEC,ADD,ADC,SUB,SBC,XOR,OR,AND,NOT,CMP,
     LITERAL
 };
 enum mnemonic mnemonic(char *name);

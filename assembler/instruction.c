@@ -97,6 +97,7 @@ void check_instruction_operands(struct instruction *i) {
 	case AND:
 	case OR:
 	case XOR:
+	case CMP:
 	    if ((!is_alu(i->l_operand)) || (!is_alu(i->r_operand)) || (i->r_operand.value.reg != RB)) {
 
 	        asmerror("Instruction requires direct ALU register and RB operands", NULL);
@@ -197,6 +198,7 @@ static uint8_t instruction_class(enum mnemonic mnemonic) {
 	case OR:
 	case AND:
 	case NOT:
+	case CMP:
 		return CLASS_ALU;
     }
 }
@@ -318,6 +320,9 @@ static void assemble_alu_instruction(struct instruction *i) {
             return;
 	case SBC:
 	    i->byte0 |= ALU(true, 0b010);
+	    return;
+	case CMP:
+	    i->byte0 |= ALU(true, 0b110);
 	    return;
         case INC:
             i->byte0 |= ALU(false, 0b000);
@@ -462,6 +467,9 @@ static void print_mnemonic(enum mnemonic mnemonic) {
 		break;
 	case NOT:
 		printf("NOT ");
+		break;
+	case CMP:
+		printf("CMP ");
 		break;
 	case LITERAL:
 		printf("");

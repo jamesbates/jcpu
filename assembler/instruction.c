@@ -61,6 +61,7 @@ void check_instruction_operands(struct instruction *i) {
 	case NOT:
 	case INC:
 	case DEC:
+        case TST:
 	    if ((!is_alu(i->l_operand)) || (i->r_operand.type != NONE)) {
 
 	        asmerror("Instruction requires single direct ALU register operand", NULL);
@@ -199,6 +200,7 @@ static uint8_t instruction_class(enum mnemonic mnemonic) {
 	case AND:
 	case NOT:
 	case CMP:
+        case TST:
 		return CLASS_ALU;
     }
 }
@@ -315,6 +317,9 @@ static void assemble_alu_instruction(struct instruction *i) {
         case ADC:
             i->byte0 |= ALU(true,0b011);
             return;
+        case TST:
+	    i->byte0 |= ALU(true,0b111);
+	    return;
         case SUB:
             i->byte0 |= ALU(false, 0b010);
             return;
@@ -470,6 +475,9 @@ static void print_mnemonic(enum mnemonic mnemonic) {
 		break;
 	case CMP:
 		printf("CMP ");
+		break;
+        case TST:
+		printf("TST ");
 		break;
 	case LITERAL:
 		printf("");

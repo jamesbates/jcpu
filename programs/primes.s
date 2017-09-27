@@ -31,8 +31,7 @@ for_primeno:	lod rd, [sp]			; rd=candidate
 		data rc, #modulo		; rc = &modulo
 		call rc				; rd = modulo(candidate,primes[primeno])
 		pop rc				; rc=primeno
-		xor rb,rb			; rb=0
-		cmp rd,rb			; if (modulo(candidate,primes[primeno]) == 0)
+		tst rd  			; if (modulo(candidate,primes[primeno]) == 0)
 		jz #break			; 	goto break;
 		inc rc				; primeno++
 		lod rb, [#0]			; rb=prime_count

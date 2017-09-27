@@ -1,8 +1,10 @@
 begin:		xor rb,rb			; rb = 0
+                mov sp,rb                       ; sp = 0
 		inc rb				; rb = 1
 		sto [#0], rb			; prime_count = 1
 		inc rb				; rb = 2
-		sto [#1], rb			; primes[0] = 2
+		sto [#1], rb                    ; primes[0] = 2
+		mov ra, rb                      ; printf("%d",primes[0])
 for_next_prime:	data rc, #find_next_prime
 		call rc				; ra = find_next_prime()
 		data rc, #1			; rc=primes

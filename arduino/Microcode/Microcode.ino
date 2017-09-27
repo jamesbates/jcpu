@@ -127,26 +127,23 @@ uint32_t *MICROCODE0() {
 }
 
 uint32_t *MICROCODE1(uint32_t c1) {
-  microcode[2] = c1;
-  microcode[3] = _RT;
-  microcode[4] = microcode[5] = microcode[6] = microcode[7] = 0;
+  microcode[2] = c1 | _RT;
+  microcode[3] = microcode[4] = microcode[5] = microcode[6] = microcode[7] = 0;
   return microcode;
 }
 
 uint32_t *MICROCODE2(uint32_t c1, uint32_t c2) {
   microcode[2] = c1;
-  microcode[3] = c2;
-  microcode[4] = _RT;
-  microcode[5] = microcode[6] = microcode[7] = 0;
+  microcode[3] = c2 | _RT;
+  microcode[4] = microcode[5] = microcode[6] = microcode[7] = 0;
   return microcode;
 }
 
 uint32_t *MICROCODE3(uint32_t c1,uint32_t c2,uint32_t c3) {
   microcode[2] = c1;
   microcode[3] = c2;
-  microcode[4] = c3;
-  microcode[5] = _RT;
-  microcode[6] = microcode[7] = 0;
+  microcode[4] = c3 | _RT;
+  microcode[5] = microcode[6] = microcode[7] = 0;
   return microcode;
 }
 
@@ -154,9 +151,8 @@ uint32_t *MICROCODE4(uint32_t c1,uint32_t c2,uint32_t c3, uint32_t c4) {
   microcode[2] = c1;
   microcode[3] = c2;
   microcode[4] = c3;
-  microcode[5] = c4;
-  microcode[6] = _RT;
-  microcode[7] = 0;
+  microcode[5] = c4 | _RT;
+  microcode[6] = microcode[7] = 0;
   return microcode;
 }
 
@@ -426,27 +422,30 @@ void write_ALU_instructions(uint8_t rom_no) {
   Serial.print("Writing CMP Rb, reg instructions .");
   for (uint8_t reg = Ra; reg <= Rd; reg++) {
 
-    write_instruction(ALU_OPCODE(true, A_OR_B, reg), MICROCODE1(_E(reg) | ALC | ALS(B_MINUS_A) | _ALW), rom_no);
+    write_instruction(ALU_OPCODE(true, A_OR_B, reg), MICROCODE1(_E(reg) | ALC | _ALB | ALS(B_MINUS_A) | _ALW), rom_no);
   }
   Serial.println(". done.");
 
   Serial.print("Writing CMP reg, Rb instructions .");
   for (uint8_t reg = Ra; reg <= Rd; reg++) {
 
-    write_instruction(ALU_OPCODE(true, A_AND_B, reg), MICROCODE1(_E(reg) | ALC | ALS(A_MINUS_B) | _ALW), rom_no);
+    write_instruction(ALU_OPCODE(true, A_AND_B, reg), MICROCODE1(_E(reg) | ALC | _ALB | ALS(A_MINUS_B) | _ALW), rom_no);
   }
   Serial.println(". done.");
 
+  Serial.print("Writing TST reg instructions .");
+  for (uint8_t reg = Ra; reg <= Rd; reg++) {
 
-  Serial.println("Written 56 ALU instructions.");
-  Serial.print("Writing HLT to currently unused instructions (8 total): XORC, NOTC ");
-  for (uint8_t S = A_XOR_B; S <= NOT_A; S+=(NOT_A - A_XOR_B)) {
-    for (uint8_t reg = Ra; reg <= Rd; reg++) {
-      write_instruction(ALU_OPCODE(true, S, reg), MICROCODE1(_HLT), rom_no);
-    }
-    Serial.print(".");
+    write_instruction(ALU_OPCODE(true, NOT_A, reg), MICROCODE1(_E(reg) | ALS(A_PLUS_B) | _ALW), rom_no);
   }
-  Serial.println(" done.");
+  Serial.println(". done.");
+
+  Serial.println("Written 60 ALU instructions.");
+  Serial.print("Writing HLT to currently unused instructions (4 total): XORC .");
+  for (uint8_t reg = Ra; reg <= Rd; reg++) {
+    write_instruction(ALU_OPCODE(true, A_XOR_B, reg), MICROCODE1(_HLT), rom_no);
+  }
+  Serial.println(". done.");
 }
 #endif
 

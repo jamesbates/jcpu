@@ -141,6 +141,10 @@ enum mnemonic mnemonic(char *name) {
 
         return CMP;
     }
+    if (strcmp("tst",name)==0) {
+        
+        return TST;
+    }
     asmerror("Unknown instruction %s", name);
     return NOP;
 }

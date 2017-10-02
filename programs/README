@@ -1,0 +1,7 @@
+These example programs are written in assembly source code. To obtain machine code for the homebuilt CPU, first build the 'assembler' programme in the 'assembler' folder (just "make" should work on Linux or OSX).
+
+Then use it to assemble any of thee programs, e.g.:
+
+$ ../assembler/assembler < fib.s
+
+That will print out the binary bytes of the programme on stdout. Note that the assembler reads stdin, it doesn't parse or read any of its command-line arguments.

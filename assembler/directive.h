@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void handle_directive(char *directive, uint8_t param);
+void handle_directive(char *directive, char *symbol, uint8_t param);
 
 #endif
 

@@ -1,11 +1,11 @@
-#define ROM_NO 2
+#define ROM_NO 3
 
 //#define INS_MOV 1
 //#define INS_LOD 1
 //#define INS_STO 1
 #define INS_ALU 1
 
-#define DUMP 1
+//#define DUMP 1
 
 //#define CHECK_COVERAGE 1
 
@@ -31,7 +31,7 @@
 #define ALU_OPCODE(with_carry,S,reg) ((0b11 << 6) | (with_carry ? 1 << 5 : 0) | ((S & 0b111) << 2) | (reg & 0b11))
 
 /* signal word: bit position  31     30     29     28     27     26     25     24     23     22     21     20     19     18     17     16                 
- *              meaning       _RT    -      -      -      -      -      _ME    _MW    _HLT   PGM    _MAW   _IRW   _RdE   _RdW   _RcE   _RcW
+ *              meaning       _TR    -      -      -      -      -      _ME    _MW    _HLT   PGM    _MAW   _IRW   _RdE   _RdW   _RcE   _RcW
  *              bit position  15     14     13     12     11     10     09     08     07     06     05     04     03     02     01     00
  *              meaning       _RbE   _RbW   _RaE   _RaW   _PCE   _PCW   _SPE   _SPW   PCC    _ALE   _ALW   _ALB   ALS2   ALS1   ALS0   ALC
  */
@@ -65,7 +65,7 @@
 #define _MW  ((uint32_t)1 << 24)
 #define _ME  ((uint32_t)1 << 25)
 
-#define _RT  ((uint32_t)1 << 31)
+#define _TR  ((uint32_t)1 << 31)
 
 #define ALS(S) ((uint32_t)S << 1)
 
@@ -85,7 +85,7 @@ uint8_t write_mask[32];
 
 uint32_t inline flip_active_lows(uint32_t microcode_word) {
 
-  microcode_word ^= (_ALB | _ALW | _ALE | _SPW | _SPE | _PCW | _PCE | _RaW | _RaE | _RbW | _RbE | _RcW | _RcE | _RdW | _RdE | _MAW | _IRW | _HLT | _MW | _ME | _RT);
+  microcode_word ^= (_ALB | _ALW | _ALE | _SPW | _SPE | _PCW | _PCE | _RaW | _RaE | _RbW | _RbE | _RcW | _RcE | _RdW | _RdE | _MAW | _IRW | _HLT | _MW | _ME | _TR);
   return microcode_word;
 }
 
@@ -117,24 +117,24 @@ uint32_t _W(uint8_t reg) {
 
 #define FETCH0 (_PCE | _MAW)
 #define FETCH1 (PGM | _ME | _IRW | PCC)
-uint32_t microcode[8] = {FETCH0,FETCH1,_RT,0,0,0,0,0};
+uint32_t microcode[8] = {FETCH0,FETCH1,_TR,0,0,0,0,0};
 
 
 uint32_t *MICROCODE0() {
-  microcode[2] = _RT;
+  microcode[2] = _TR;
   microcode[3] = microcode[4] = microcode[5] = microcode[6] = microcode[7] = 0;
   return microcode;
 }
 
 uint32_t *MICROCODE1(uint32_t c1) {
-  microcode[2] = c1 | _RT;
+  microcode[2] = c1 | _TR;
   microcode[3] = microcode[4] = microcode[5] = microcode[6] = microcode[7] = 0;
   return microcode;
 }
 
 uint32_t *MICROCODE2(uint32_t c1, uint32_t c2) {
   microcode[2] = c1;
-  microcode[3] = c2 | _RT;
+  microcode[3] = c2 | _TR;
   microcode[4] = microcode[5] = microcode[6] = microcode[7] = 0;
   return microcode;
 }
@@ -142,7 +142,7 @@ uint32_t *MICROCODE2(uint32_t c1, uint32_t c2) {
 uint32_t *MICROCODE3(uint32_t c1,uint32_t c2,uint32_t c3) {
   microcode[2] = c1;
   microcode[3] = c2;
-  microcode[4] = c3 | _RT;
+  microcode[4] = c3 | _TR;
   microcode[5] = microcode[6] = microcode[7] = 0;
   return microcode;
 }
@@ -151,7 +151,7 @@ uint32_t *MICROCODE4(uint32_t c1,uint32_t c2,uint32_t c3, uint32_t c4) {
   microcode[2] = c1;
   microcode[3] = c2;
   microcode[4] = c3;
-  microcode[5] = c4 | _RT;
+  microcode[5] = c4 | _TR;
   microcode[6] = microcode[7] = 0;
   return microcode;
 }

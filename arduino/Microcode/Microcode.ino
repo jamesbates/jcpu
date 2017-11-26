@@ -1,9 +1,9 @@
 #define ROM_NO 3
 
-//#define INS_MOV 1
+#define INS_MOV 1
 //#define INS_LOD 1
 //#define INS_STO 1
-#define INS_ALU 1
+//#define INS_ALU 1
 
 //#define DUMP 1
 
@@ -13,22 +13,6 @@
 #include <MyEEPROM.h>
 #include <stdint.h>
 
-#define Ra  0b000
-#define Rb  0b001
-#define Rc  0b010
-#define Rd  0b011
-#define SP  0b100
-#define PC  0b101
-#define SPi 0b110
-#define IMM 0b111
-
-#define MOV 0b00
-#define LOD 0b01
-#define STO 0b10
-
-#define OPCODE(op,dreg,sreg) (((op) << 6) | ((dreg) << 3) | (sreg))
-
-#define ALU_OPCODE(with_carry,S,reg) ((0b11 << 6) | (with_carry ? 1 << 5 : 0) | ((S & 0b111) << 2) | (reg & 0b11))
 
 /* signal word: bit position  31     30     29     28     27     26     25     24     23     22     21     20     19     18     17     16                 
  *              meaning       _TR    -      -      -      -      -      _ME    _MW    _HLT   PGM    _MAW   _IRW   _RdE   _RdW   _RcE   _RcW
@@ -69,14 +53,47 @@
 
 #define ALS(S) ((uint32_t)S << 1)
 
-#define INC_A     0b000
 #define B_MINUS_A 0b001
 #define A_MINUS_B 0b010
 #define A_PLUS_B  0b011
 #define A_XOR_B   0b100
 #define A_OR_B    0b101
 #define A_AND_B   0b110
+
+
+#define INC_A     0b000
 #define NOT_A     0b111
+
+
+
+/* EEPROM address:  bit position     12       11      10  ....   8      7   .....    0
+ *                  meaning       flags    carry     (microtime) T              opcode
+ */
+
+
+#define CARRY_ADDR (1 << 11)
+#define FLAGS_ADDR (1 << 12)
+
+#define ins_eeprom_address(opcode, carry, flags, T) (opcode | (carry ? CARRY_ADDR : 0) | (flags ? FLAGS_ADDR : 0) | (T << 8))
+
+
+#define MOV 0b00
+#define LOD 0b01
+#define STO 0b10
+
+
+#define Ra  0b000
+#define Rb  0b001
+#define Rc  0b010
+#define Rd  0b011
+#define SP  0b100
+#define PC  0b101
+#define SPi 0b110
+#define IMM 0b111
+
+
+#define OPCODE(op,dreg,sreg) (((op) << 6) | ((dreg) << 3) | (sreg))
+#define ALU_OPCODE(with_carry,S,reg) ((0b11 << 6) | (with_carry ? 1 << 5 : 0) | ((S & 0b111) << 2) | (reg & 0b11))
 
 
 #ifdef CHECK_COVERAGE
@@ -117,6 +134,7 @@ uint32_t _W(uint8_t reg) {
 
 #define FETCH0 (_PCE | _MAW)
 #define FETCH1 (PGM | _ME | _IRW | PCC)
+
 uint32_t microcode[8] = {FETCH0,FETCH1,_TR,0,0,0,0,0};
 
 
@@ -156,18 +174,14 @@ uint32_t *MICROCODE4(uint32_t c1,uint32_t c2,uint32_t c3, uint32_t c4) {
   return microcode;
 }
 
-#define CARRY_ADDR (1 << 11)
-#define FLAGS_ADDR (1 << 12)
-
-#define ins_eeprom_address(opcode, carry, flags, T) (opcode | (carry ? CARRY_ADDR : 0) | (flags ? FLAGS_ADDR : 0) | (T << 8))
 
 
 void write_conditional_instruction(uint16_t opcode, bool carry, bool flags, uint32_t microcode[], uint8_t rom_no) {
 
   for (uint8_t T = 0; T < 8; T++) {
 
-    uint8_t eeprom_byte = (flip_active_lows(microcode[T]) >> (8*rom_no)) & 0xFF;
     uint16_t eeprom_address = ins_eeprom_address(opcode, carry, flags, T);
+    uint8_t eeprom_byte = (flip_active_lows(microcode[T]) >> (8*rom_no)) & 0xFF;
     MyEEPROM.write_eeprom(eeprom_address, eeprom_byte);
     
     #ifdef CHECK_COVERAGE

@@ -1,55 +1,93 @@
-begin:		xor rb,rb			; rb = 0
-                mov sp,rb                       ; sp = 0
-		inc rb				; rb = 1
-		sto [#0], rb			; prime_count = 1
-		inc rb				; rb = 2
-		sto [#1], rb                    ; primes[0] = 2
-		mov ra, rb                      ; printf("%d",primes[0])
-for_next_prime:	data rc, #find_next_prime
-		call rc				; ra = find_next_prime()
-		data rc, #1			; rc=primes
-		lod rb, [#0]			; rb = prime_count
-		add rc,rb			; rc=&primes[prime_count]
-		sto [rc],ra			; primes[prime_count] = ra
-		inc rb				; rb++
-		sto [#0], rb			; prime_count++
-		jmp #for_next_prime
-find_next_prime:lod rd, [#0]			; rd=prime_count
-		dec rd				; rd=prime_count-1
-		data rb, #1			; rb=&primes
-		add rd,rb			; rd=&primes[prime_count-1]
-		lod rd, [rd]			; rd=primes[prime_count-1]
-		inc rd				; rd=primes[prime_count-1]+1
-		push rd				; candidate=primes[prime_count-1]+1; push candidate
-for_candidate:	data rc, #0			; rc=0
-for_primeno:	lod rd, [sp]			; rd=candidate
-		push rc				; primeno=rc; push primeno
-		data rb, #1 			; rb = &primes
-		add rc,rb			; rc = &primes[primeno]
-		mov rb,rc			; rb = &primes[primeno]
-		lod rb, [rb]			; rb = primes[primeno]
-		data rc, #modulo		; rc = &modulo
-		call rc				; rd = modulo(candidate,primes[primeno])
-		pop rc				; rc=primeno
-		tst rd  			; if (modulo(candidate,primes[primeno]) == 0)
-		jz #break			; 	goto break;
-		inc rc				; primeno++
-		lod rb, [#0]			; rb=prime_count
-		cmp rc,rb			; if (primeno==prime_count)
-		jz #found_prime			;     goto found_prime
-		jmp #for_primeno			;
-break:		pop rd				; rd = candidate
-		inc rd				; candidate++
-		jc #end				; if (candidate >= 256) goto end
-		push rd				; push candidate
-		jmp #for_candidate
-found_prime:	pop rd				; rd=candidate
-		mov ra,rd			; ra=candidate; printf("%d", candidate)
-		ret				; return candidate
-modulo:		cmp rd,rb			; if (rd >= rb)
-		jc #mod_cont			;	goto mod_cont
-		ret				; return rd;
-mod_cont:	sub rd,rb			; rd -= rb;
-		jmp #modulo			;    goto modulo
-end:		hlt
+	.equ prime_count, 0
+	.equ primes, 1
+	.org 0
+;
+;    void main(): halt
+;
+main:		data sp, #0
+		sto [#prime_count], sp	; prime_count=0
+		data ra, #2
+		data rc, #find_primes
+		call rc
+		hlt
+
+	.org 32
+;
+;   void find_primes()
+;
+;   clobbers: ra, rb, rc, rd
+;
+find_primes:	data rd, #3		; rd = candidate = 3;
+		tst rd
+_4:		jc #_ret
+		push rd			; stack = [..,candidate]
+		data rc, #is_prime
+		call rc
+		tst rd
+		jz #_5
+		lod ra, [sp]		; stack = [..,candidate].ra= candidate
+		data rd, #primes
+		lod rb, [#prime_count]
+		add rd, rb
+		sto [rd], ra		; rc =primes[prime_count]
+		inc rb
+		sto [#prime_count], rb	; prime_count++
+_5:		pop rd
+		data rb, #2
+		add rd, rb		; candidate +=2;
+		jmp #_4
+_ret:		ret
+
+	.org 64
+;
+;   bool is_prime(unsigned int candidate)
+;
+;   expects: rd = candidate
+;   returns: rd = return value.
+;   clobbers: rb, rc
+;
+is_prime:	data rb, #0		; unsigned int prime_index=0;
+_2:		lod rc, [#prime_count]  ; rc = prime_count;
+		cmp rb,rc
+		jc #_return_true	; if (prime_index >= prime_count)
+		push rd			; stack = [..,candidate]
+		data rd, #primes
+		add rd, rb
+		lod rc, [rd]		; rc =primes[prime_index]
+		pop rd			; stack = [..]. rd = candidate
+		push rb			; stack = [..,prime_index]
+		data rb, #15
+		cmp rb, rc
+		jc #_3
+		pop rb
+		jmp #_return_true
+_3:		mov rb, rc
+		push rd			; stack = [..,prime_index,candidate]
+		data rc, #calc_remaind
+		call rc
+		tst rd
+		jz #_return_false
+		pop rd			; stack =[..,prime_index].rd=candidate
+		pop rb			; stack = [..]. rb = prime_index
+		inc rb			; prime_index++
+		jmp #_2
+_return_false:	pop rd			; stack = [..,prime_index]
+		pop rb			; stack = [..]
+		data rd,#0
+		ret
+_return_true:	data rd,#1
+		ret
+
+	.org 128
+;
+;   unsigned int calc_remaind(unsigned int dividend, unsigned int divisor)
+;
+;   expects: rd = dividend. rb = divisor
+;   returns: rd = return value.
+;
+calc_remaind:	cmp rd, rb
+		jc #_1
+		ret
+_1:		sub rd, rb
+		jmp #calc_remaind
 

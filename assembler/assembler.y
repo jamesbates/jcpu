@@ -67,7 +67,7 @@ directive:
 	|
 	PERIOD IDENTIFIER IDENTIFIER COMMA NUMBER NEWLINE
 	{
-		handle_directive($2->identifier, $3->identifier, $4->value);
+		handle_directive($2->identifier, $3->identifier, $5->value);
 	}
 	;
 

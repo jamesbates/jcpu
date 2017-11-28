@@ -1,52 +1,53 @@
+#include <stdbool.h>
 #include <stdio.h>
-#include <stdint.h>
-#define MAX_VALUE 255
 
-uint8_t primes[128];
-uint8_t prime_count = 0;
+unsigned int prime_count = 0;
+unsigned int primes[128];
 
-uint8_t modulo(uint16_t val, uint8_t divider) {
 
-    while (val >= divider) {
+unsigned int calc_remaind(unsigned int dividend, unsigned int divisor) {
 
-        val -= divider;
+    while (dividend >= divisor) {
+   	dividend -= divisor;
     }
-
-    return val;
+    return dividend;
 }
 
-uint16_t find_next_prime() {
+bool is_prime(unsigned int candidate) {
 
-    for (uint16_t candidate = primes[prime_count-1]+1; ; candidate++) {
+    for (
+		unsigned int prime_index=0;
+		(prime_index < prime_count) && (primes[prime_index] < 16);
+		prime_index++) {
 
-	uint8_t primeno;
+        if (calc_remaind(candidate, primes[prime_index]) == 0) {
 
-        for (primeno=0; primeno < prime_count; primeno++) {
-
-	    if (modulo(candidate, primes[primeno]) == 0) {
-
-                break;
-	    }
+	     return false;
         }
+    }
 
-	if (primeno == prime_count) {
+    return true;
+}
 
-	    return candidate;
-	}
+void show_prime(unsigned int prime) {
+
+    printf("Next prime number: %d\n", prime);
+}
+
+void find_primes() {
+
+    for (unsigned int candidate = 3; candidate < 256; candidate+=2) {
+
+	if (is_prime(candidate)) {
+
+	    show_prime(candidate);
+	    primes[prime_count++] = candidate;
+        }
     }
 }
 
-int main(void) {
+int main(int argc, char **argv) {
 
-    uint16_t next_prime = 2;
-
-    do {
-
-	printf("Next prime is: %d\n", next_prime);
-        primes[prime_count++] = next_prime;
-
-	next_prime = find_next_prime();
-    } while (next_prime <= MAX_VALUE);
-
-    return 0;
+    show_prime(2);
+    find_primes();
 }

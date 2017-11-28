@@ -93,13 +93,18 @@ void check_instruction_operands(struct instruction *i) {
 	    break;
 	case ADD:
 	case ADC:
-	case SUB:
-	case SBC:
 	case AND:
 	case OR:
 	case XOR:
-	case CMP:
 	    if ((!is_alu(i->l_operand)) || (!is_alu(i->r_operand)) || (i->r_operand.value.reg != RB)) {
+
+	        asmerror("Instruction requires direct ALU register and RB operands", NULL);
+	    }
+	    break;
+	case SUB:
+	case SBC:
+	case CMP:
+	    if ((!is_alu(i->l_operand)) || (!is_alu(i->r_operand)) || ((i->r_operand.value.reg != RB) && (i->l_operand.value.reg != RB))) {
 
 	        asmerror("Instruction requires direct ALU register and RB operands", NULL);
 	    }
@@ -256,6 +261,11 @@ static void assemble_dest_operand(struct instruction *i) {
             i->byte0 |= DIMM;
             return;
         /* ALU operations*/
+	case SUB:
+	case SBC:
+	case CMP:
+            i->byte0 |= (SREG((i->l_operand.value.reg != RB) ? i->l_operand.value.reg : i->r_operand.value.reg));
+	    return;
         default:
             i->byte0 |= SREG(i->l_operand.value.reg);
     }
@@ -321,13 +331,13 @@ static void assemble_alu_instruction(struct instruction *i) {
 	    i->byte0 |= ALU(true,0b111);
 	    return;
         case SUB:
-            i->byte0 |= ALU(false, 0b010);
+            i->byte0 |= ALU(false, ((i->l_operand.value.reg != RB) ? 0b010 : 0b001));
             return;
 	case SBC:
-	    i->byte0 |= ALU(true, 0b010);
+	    i->byte0 |= ALU(true, ((i->l_operand.value.reg != RB) ? 0b010 : 0b001));
 	    return;
 	case CMP:
-	    i->byte0 |= ALU(true, 0b110);
+	    i->byte0 |= ALU(true, ((i->l_operand.value.reg != RB) ? 0b110 : 0b101));
 	    return;
         case INC:
             i->byte0 |= ALU(false, 0b000);

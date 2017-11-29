@@ -29,7 +29,7 @@ _4:		jc #_ret
 		data rd, #primes
 		lod rb, [#prime_count]
 		add rd, rb
-		sto [rd], ra		; rc =primes[prime_count]
+		sto [rd], ra		; primes[prime_count] = candidate
 		inc rb
 		sto [#prime_count], rb	; prime_count++
 _5:		pop rd

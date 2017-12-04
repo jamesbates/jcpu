@@ -9,11 +9,11 @@
 ; Programme selector. Desired program is set in #progno
 p_select:	data Rb,#3
 		data Rc,#progno
-		lod Rc,[Rc]
+		ldp Rc,[Rc]
 		and Rc,Rb
 		data Rb,#progtab
 		add Rc,Rb
-		lod Rc,[Rc]
+		ldp Rc,[Rc]
 		call Rc
 		jmp #p_select
 
@@ -34,7 +34,7 @@ alt_inc:	inc Rc
 		sto [#cur_prog],Rc
 		pop Rb
 		add Rc,Rb
-		lod Rc,[Rc]
+		ldp Rc,[Rc]
 		call Rc
 ret:		ret
 

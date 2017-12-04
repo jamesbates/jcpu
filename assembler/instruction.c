@@ -53,9 +53,9 @@ void check_instruction_operands(struct instruction *i) {
 	    }
 	    break;
 	case CALL:
-	    if ((i->l_operand.type != REGISTER) || (i->r_operand.type != NONE) || (i->l_operand.is_indirect) || (i->l_operand.value.reg != RC)) {
+	    if ((((i->l_operand.type != REGISTER) || (i->l_operand.value.reg != RC)) && (!is_imm(i->l_operand))) || (i->r_operand.type != NONE) || (i->l_operand.is_indirect)) {
 
-	        asmerror("Instruction requires single Rc operand", NULL);
+	        asmerror("Instruction requires single immediate or Rc operand", NULL);
 	    }
 	    break;
 	case NOT:
@@ -85,6 +85,12 @@ void check_instruction_operands(struct instruction *i) {
 	        asmerror("Instruction requires one direct register and one indirect operand", NULL);
 	    }
 	    break;
+	case LDP:
+	    if ((i->l_operand.type != REGISTER) || (i->l_operand.is_indirect) || (i->r_operand.type != REGISTER) || (!i->r_operand.is_indirect) || (i->r_operand.value.reg != RC)) {
+
+                asmerror("Instruction requires one direct register and indirect Rc operand", NULL);
+            }
+            break;
 	case STO:
 	    if ((i->l_operand.type == NONE) || (!i->l_operand.is_indirect) || (i->r_operand.type == NONE) || (i->r_operand.is_indirect)) {
 
@@ -113,7 +119,6 @@ void check_instruction_operands(struct instruction *i) {
 	    asmerror("Unrecognized instruction.", NULL);
     }
 }
-
 
 
 
@@ -187,6 +192,7 @@ static uint8_t instruction_class(enum mnemonic mnemonic) {
 	case JO:
 		return CLASS_MOV;
 	case LOD:
+	case LDP:
 	case POP:
 	case RET:
 		return CLASS_LOD;
@@ -242,6 +248,9 @@ static void assemble_dest_operand(struct instruction *i) {
                 i->byte0 |= DREG(i->l_operand.value.reg);
             }
             return;
+	case LDP:
+	    i->byte0 |= DIMM;
+	    return;
          case PUSH:
          case CALL:
             i->byte0 |= DSPi;
@@ -284,6 +293,9 @@ static void assemble_src_operand(struct instruction *i) {
                 i->byte0 |= SREG(i->r_operand.value.reg);
             }
             return;
+	case LDP:
+	    i->byte0 |= SREG(i->l_operand.value.reg);
+	    return;
          case PUSH:
          case JMP:
              if (is_imm(i->l_operand)) {
@@ -293,6 +305,12 @@ static void assemble_src_operand(struct instruction *i) {
             }
             return;
          case CALL:
+	     if (is_imm(i->l_operand)) {
+	         i->byte0 |= SIMM;
+	     } else {
+		 i->byte0 |= SREG(PC);
+	     }
+	     return;
          case HLT:
             i->byte0 |= SREG(PC);
             return;
@@ -437,6 +455,9 @@ static void print_mnemonic(enum mnemonic mnemonic) {
 		break;
 	case LOD:
 		printf("LOD ");
+		break;
+	case LDP:
+		printf("LDP ");
 		break;
 	case POP:
 		printf("POP ");

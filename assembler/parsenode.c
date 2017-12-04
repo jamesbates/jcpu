@@ -77,6 +77,10 @@ enum mnemonic mnemonic(char *name) {
 
         return LOD;
     }
+    if (strcmp("ldp",name)==0) {
+
+        return LDP;
+    }
     if (strcmp("pop",name)==0) {
 
         return POP;

@@ -62,6 +62,7 @@ _3:	pop rb			; stack = [high]. rb=j
 	jmp #_1
 _2:	push rd			; stack = [high]
 	mov rb, rc		; rb = i
+	data rd, #values
 	add rd, rb		; rd = &values[i]
 	lod rd,[rd]		; rd = values[i]
 	lod rb,[#pivot]
@@ -110,13 +111,13 @@ _5:	ret
 ;
 show_values:	data rb, #0
 	data rc, #100
-_6:	cmp rb, rc
+_8:	cmp rb, rc
 	jc #_7
 	data rd, #values
 	add rd, rb
 	lod ra, [rd]
 	inc rb
-	jmp #_6
+	jmp #_8
 _7:	ret
 	
 ;

@@ -1,21 +1,37 @@
 jCPU: My homebuilt 8-bit Ben Eater inspired CPU
 ===============================================
 
-A few months ago, inspired by Ben Eater's wonderful Youtube video series, I built my very own 8-bit CPU from scratch,
-on breadboards using basic digital logic components (gates, latches, EEPROMs).
+A few months ago, inspired by Ben Eater's wonderful Youtube video series, I built my very
+own 8-bit CPU from scratch, on breadboards using basic digital logic components (gates, 
+latches, EEPROMs).
 
-I have documented the entire adventure on my Youtube channel: https://www.youtube.com/channel/UCH09NwwJsfThwLKvc6kxl4Q
+I have documented the entire adventure on my Youtube channel:
+https://www.youtube.com/channel/UCH09NwwJsfThwLKvc6kxl4Q
 
-This repository contains the supporting software for this project. It is divided into a number of sub-projects:
+This repository contains the supporting software for this project. It is divided into a
+number of sub-projects:
 
-arduino/ contains the Arduino C++ code, which is used to program the various EEPROMs used in the project:
-arduino/DigitalDisplay/ programs an EEPROM to display decimal digits, based on 8-bit bainry input. See https://www.youtube.com/watch?v=b3iytSzYhSs
-arduino/Erase/ erases an entire EEPROM, resetting every byte to 0xFF
-arduino/Microcode/ programs microcode into the 4 EEPROMs, which make up the control unit. See https://www.youtube.com/watch?v=CE615IDVVNA and https://www.youtube.com/watch?v=O_mTxnFYLXE
-arduino/libraries/MyEEPROM/ support library to provide high-level EEPROM read- and write-functions. See https://www.youtube.com/watch?v=b3iytSzYhSs
++ arduino/ contains the Arduino C++ code, which is used to program the various EEPROMs 
+           used in the project.
+---+  arduino/DigitalDisplay/ programs an EEPROM to display decimal digits, based on 
+                              8-bit bainry input. See 
+                              https://www.youtube.com/watch?v=b3iytSzYhSs
+---+  arduino/Erase/ erases an entire EEPROM, resetting every byte to 0xFF
+---+  arduino/Microcode/ programs microcode into the 4 EEPROMs, which make up the control
+                         unit. See https://www.youtube.com/watch?v=CE615IDVVNA and
+                         https://www.youtube.com/watch?v=O_mTxnFYLXE
+---+  arduino/libraries/MyEEPROM/ support library to provide high-level EEPROM read- and
+                                  write-functions. See
+                                  https://www.youtube.com/watch?v=b3iytSzYhSs
 
-assembler/ A very simple assembler, written in C, using UN*X lex and yacc, which can translate the assembly files in programs/ to machine code, suitable for the 8-bit CPU. See https://www.youtube.com/watch?v=-_u6HhAb5mo&t=1509s
++ assembler/ A very simple assembler, written in C, using UN*X lex and yacc, which can
+             translate the assembly files in programs/ to machine code, suitable for the
+             8-bit CPU. See https://www.youtube.com/watch?v=-_u6HhAb5mo&t=1509s
 
-programs/ Contains several example programs in assembly for the 8-bit CPU. Some (primes.s and qsport.s) are hand-compiled from corresponding C-code. Others were written in assembly from scratch.
++ programs/ Contains several example programs in assembly for the 8-bit CPU. Some
+            (primes.s and qsport.s) are hand-compiled from corresponding C-code. Others
+            were written in assembly from scratch.
 
-schematics/ generated PDF, and source .sch (gEDA schematics) files, for electrical schematics describing the various parts of the 8-bit CPU. Shown throughout the videos in the series.
++ schematics/ generated PDF, and source .sch (gEDA schematics) files, for electrical
+              schematics describing the various parts of the 8-bit CPU. Shown throughout
+              the videos in the series.

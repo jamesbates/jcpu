@@ -1,7 +1,7 @@
 #define ROM_NO 3
 
-#define INS_MOV 1
-//#define INS_LOD 1
+//#define INS_MOV 1
+#define INS_LOD 1
 //#define INS_STO 1
 //#define INS_ALU 1
 
@@ -174,6 +174,15 @@ uint32_t *MICROCODE4(uint32_t c1,uint32_t c2,uint32_t c3, uint32_t c4) {
   return microcode;
 }
 
+uint32_t *MICROCODE5(uint32_t c1,uint32_t c2,uint32_t c3, uint32_t c4, uint32_t c5) {
+  microcode[2] = c1;
+  microcode[3] = c2;
+  microcode[4] = c3;
+  microcode[5] = c4;
+  microcode[6] = c5 | _TR;
+  microcode[7] = 0;
+  return microcode;
+}
 
 
 void write_conditional_instruction(uint16_t opcode, bool carry, bool flags, uint32_t microcode[], uint8_t rom_no) {
@@ -283,7 +292,7 @@ void write_LODs(uint8_t rom_no) {
     Serial.print(".");
     for (uint8_t dreg = Ra; dreg <= PC; dreg++) {
 
-      write_instruction(OPCODE(LOD, dreg, sreg), MICROCODE2(_MAW | _E(sreg), ((sreg == Rc) ? PGM : 0) | _ME | _W(dreg)), rom_no);
+      write_instruction(OPCODE(LOD, dreg, sreg), MICROCODE2(_MAW | _E(sreg), _ME | _W(dreg)), rom_no);
     }
   }
   Serial.println(" done.");
@@ -302,15 +311,25 @@ void write_LODs(uint8_t rom_no) {
   }  
   Serial.println(". done.");
 
-  Serial.println("48 LOD instructions written.");
-  Serial.print("Writing HLT to currently unused opcodes (16 total): LOD IMM, [<any_R>|SPi|IMM] (8)  |  LOD SPi, [<any_R>|SPi|IMM] (8) ");  
-  for (uint8_t dreg = SPi; dreg <= IMM; dreg++) {
-    for (uint8_t sreg = Ra; sreg <= IMM; sreg++) {
+  Serial.print("Writing reg <- [Rc] LDP instructions .");
+  for(uint8_t dreg = Ra; dreg <= PC; dreg++) {
 
-      write_instruction(OPCODE(LOD, dreg, sreg), MICROCODE1(_HLT), rom_no); 
-    }
-    Serial.print(".");
-  }  
+    write_instruction(OPCODE(LOD,IMM,dreg), MICROCODE2(_MAW | _RcE, _ME | PGM | _W(dreg)), rom_no);
+  }
+  Serial.println(". done.");
+
+  Serial.println("48 LOD instructions written.");
+  Serial.print("Writing HLT to currently unused opcodes (10 total): LOD IMM, [SPi|IMM] (2)  |  LOD SPi, [<any_R>|SPi|IMM] (8) ");  
+  for (uint8_t sreg = Ra; sreg <= IMM; sreg++) {
+
+    write_instruction(OPCODE(LOD, SPi, sreg), MICROCODE1(_HLT), rom_no); 
+  }
+  Serial.print(".");
+  for (uint8_t sreg = SPi; sreg <= IMM; sreg++) {
+
+    write_instruction(OPCODE(LOD, IMM, sreg), MICROCODE1(_HLT), rom_no); 
+  }
+  Serial.print(".");
   Serial.println(" done.");
 
 }
@@ -337,10 +356,14 @@ void write_STOs(uint8_t rom_no) {
   }
   Serial.println(". done.");
 
-  Serial.print("Writing CALL instruction .");
+  Serial.print("Writing CALL RC instruction .");
   write_instruction(OPCODE(STO, SPi, PC), MICROCODE4(_SPE | _ALW | ALS(A_MINUS_B), _SPW | _ALE | _MAW, _PCE | _MW, _PCW | _RcE), rom_no);
   Serial.println(". done.");
 
+  Serial.print("Writing CALL #IMM instruction .");
+  write_instruction(OPCODE(STO, SPi, IMM), MICROCODE5(_SPE | _ALW | ALS(A_MINUS_B), _SPW | _MAW | _ALE | PCC, _PCE | _MW | _ALW | ALS(A_MINUS_B), _ALE | _MAW, _ME | PGM | _PCW), rom_no);
+  Serial.println(". done.");
+  
   Serial.print("Writing [IMM] <- reg STO instructions .");
   for (uint8_t sreg = Ra; sreg <= PC; sreg++) {
 
@@ -349,12 +372,14 @@ void write_STOs(uint8_t rom_no) {
   Serial.println(". done.");
 
   Serial.println("48 STO instructions written.");
-  Serial.print("Writing HLT to currently unused opcodes (16 total): STO [<any_R>|SPi|IMM] <- IMM (8)  |  STO [<any_R>|SPi|IMM] <- SPi (8) ");
+  Serial.print("Writing HLT to currently unused opcodes (15 total): STO [<any_R>|IMM] <- IMM (7)  |  STO [<any_R>|SPi|IMM] <- SPi (8) ");
 
   for (uint8_t sreg = SPi; sreg <= IMM; sreg++) {
     for (uint8_t dreg = Ra; dreg <= IMM; dreg++) {
 
-      write_instruction(OPCODE(STO, dreg, sreg), MICROCODE1(_HLT), rom_no); 
+      if ((dreg != SPi) || (sreg != IMM)) {
+          write_instruction(OPCODE(STO, dreg, sreg), MICROCODE1(_HLT), rom_no); 
+      }
     }
     Serial.print(".");
   }  

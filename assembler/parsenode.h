@@ -21,7 +21,7 @@ struct operand {
 
 enum mnemonic {
     DATA,MOV,JMP,JC,JN,JZ,JO,NOP,HLT,
-    LOD,POP,RET,
+    LOD,LDP,POP,RET,
     STO,PUSH,CALL,
     INC,DEC,ADD,ADC,SUB,SBC,XOR,OR,AND,NOT,CMP,TST,
     LITERAL

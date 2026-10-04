@@ -41,6 +41,8 @@ void check_instruction_operands(struct instruction *i) {
 	    break;
 	case JMP:
 	case PUSH:
+	case IN:
+	case OUT:
 	    if ((i->l_operand.type == NONE) || (i->r_operand.type != NONE) || (i->l_operand.is_indirect)) {
 
 	        asmerror("Instruction requires one direct immediate or register operand", NULL);
@@ -85,16 +87,19 @@ void check_instruction_operands(struct instruction *i) {
 	        asmerror("Instruction requires one direct register and one indirect operand", NULL);
 	    }
 	    break;
-	case LDP:
-	    if ((i->l_operand.type != REGISTER) || (i->l_operand.is_indirect) || (i->r_operand.type != REGISTER) || (!i->r_operand.is_indirect) || (i->r_operand.value.reg != RC)) {
-
-                asmerror("Instruction requires one direct register and indirect Rc operand", NULL);
-            }
-            break;
 	case STO:
 	    if ((i->l_operand.type == NONE) || (!i->l_operand.is_indirect) || (i->r_operand.type == NONE) || (i->r_operand.is_indirect)) {
 
 	        asmerror("Instruction requires one indirect and one direct operand", NULL);
+	    }
+	    break;
+	case INM:
+	case INP:
+	case OUM:
+	case OUP:
+	    if ((i->l_operand.type == NONE) || (!i->l_operand.is_indirect) || (i->r_operand.type != NONE)) {
+
+	        asmerror("Instruction requires one indirect operand", NULL);
 	    }
 	    break;
 	case ADD:
@@ -184,6 +189,8 @@ static uint8_t instruction_class(enum mnemonic mnemonic) {
         case NOP:
 	case HLT:
 	case MOV:
+	case IN:
+	case OUT:
 	case DATA:
 	case JMP:
 	case JC:
@@ -192,12 +199,15 @@ static uint8_t instruction_class(enum mnemonic mnemonic) {
 	case JO:
 		return CLASS_MOV;
 	case LOD:
-	case LDP:
+	case OUM:
+	case OUP:
 	case POP:
 	case RET:
 		return CLASS_LOD;
 	case STO:
 	case PUSH:
+	case INM:
+	case INP:
 	case CALL:
 		return CLASS_STO;
 	case ADD:
@@ -241,6 +251,9 @@ static void assemble_dest_operand(struct instruction *i) {
         case LOD:
         case STO:
         case POP:
+	case IN:
+	case INM:
+	case INP:
         case DATA:
             if (is_imm(i->l_operand)) {
                 i->byte0 |= DIMM;
@@ -248,10 +261,9 @@ static void assemble_dest_operand(struct instruction *i) {
                 i->byte0 |= DREG(i->l_operand.value.reg);
             }
             return;
-	case LDP:
-	    i->byte0 |= DIMM;
-	    return;
          case PUSH:
+	 case OUT:
+	 case OUM:
          case CALL:
             i->byte0 |= DSPi;
             return;
@@ -267,6 +279,7 @@ static void assemble_dest_operand(struct instruction *i) {
         case JO:
         case JN:
         case JC:
+	case OUP:
             i->byte0 |= DIMM;
             return;
         /* ALU operations*/
@@ -293,11 +306,11 @@ static void assemble_src_operand(struct instruction *i) {
                 i->byte0 |= SREG(i->r_operand.value.reg);
             }
             return;
-	case LDP:
-	    i->byte0 |= SREG(i->l_operand.value.reg);
-	    return;
          case PUSH:
          case JMP:
+	 case OUT:
+	 case OUM:
+	 case OUP:
              if (is_imm(i->l_operand)) {
                 i->byte0 |= SIMM;
             } else {
@@ -316,8 +329,13 @@ static void assemble_src_operand(struct instruction *i) {
             return;
         case POP:
         case RET:
+	case IN:
+	case INM:
             i->byte0 |= SSPi;
             return;
+	case INP:
+	    i->byte0 |= SIMM;
+	    return;
         case NOP:
             i->byte0 |= SREG(RA);
             return;
@@ -438,6 +456,12 @@ static void print_mnemonic(enum mnemonic mnemonic) {
 	case DATA:
 		printf("DATA ");
 		break;
+	case IN:
+		printf("IN ");
+		break;
+	case OUT:
+		printf("OUT ");
+		break;
 	case JMP:
 		printf("JMP ");
 		break;
@@ -456,8 +480,11 @@ static void print_mnemonic(enum mnemonic mnemonic) {
 	case LOD:
 		printf("LOD ");
 		break;
-	case LDP:
-		printf("LDP ");
+	case OUM:
+		printf("OUM ");
+		break;
+	case OUP:
+		printf("OUP ");
 		break;
 	case POP:
 		printf("POP ");
@@ -470,6 +497,12 @@ static void print_mnemonic(enum mnemonic mnemonic) {
 		break;
 	case PUSH:
 		printf("PUSH ");
+		break;
+	case INM:
+		printf("INM ");
+		break;
+	case INP:
+		printf("INP ");
 		break;
 	case CALL:
 		printf("CALL ");

@@ -45,6 +45,14 @@ enum mnemonic mnemonic(char *name) {
 
         return MOV;
     }
+    if (strcmp("in",name)==0) {
+
+        return IN;
+    }
+    if (strcmp("out",name)==0) {
+
+        return OUT;
+    }
     if (strcmp("nop",name)==0) {
 
         return NOP;
@@ -77,9 +85,13 @@ enum mnemonic mnemonic(char *name) {
 
         return LOD;
     }
-    if (strcmp("ldp",name)==0) {
+    if (strcmp("oum",name)==0) {
 
-        return LDP;
+        return OUM;
+    }
+    if (strcmp("oup",name)==0) {
+
+        return OUP;
     }
     if (strcmp("pop",name)==0) {
 
@@ -96,6 +108,14 @@ enum mnemonic mnemonic(char *name) {
     if (strcmp("push",name)==0) {
 
         return PUSH;
+    }
+    if (strcmp("inm",name)==0) {
+
+        return INM;
+    }
+    if (strcmp("inp",name)==0) {
+
+        return INP;
     }
     if (strcmp("call",name)==0) {
 

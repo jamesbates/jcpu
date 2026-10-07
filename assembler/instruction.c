@@ -1,5 +1,6 @@
 #include "instruction.h"
 #include <stdio.h>
+#include <string.h>
 #include "asmerror.h"
 #include "symbols.h"
 
@@ -87,6 +88,12 @@ void check_instruction_operands(struct instruction *i) {
 	        asmerror("Instruction requires one direct register and one indirect operand", NULL);
 	    }
 	    break;
+	case LDP:
+	    if ((!is_alu(i->l_operand)) || (i->r_operand.type != REGISTER) || (!i->r_operand.is_indirect) || (i->r_operand.value.reg != RC)) {
+
+                asmerror("Instruction requires one direct ALU register and indirect Rc operand", NULL);
+            }
+            break;
 	case STO:
 	    if ((i->l_operand.type == NONE) || (!i->l_operand.is_indirect) || (i->r_operand.type == NONE) || (i->r_operand.is_indirect)) {
 
@@ -222,6 +229,7 @@ static uint8_t instruction_class(enum mnemonic mnemonic) {
 	case NOT:
 	case CMP:
         case TST:
+        case LDP:
 		return CLASS_ALU;
     }
 }
@@ -283,6 +291,9 @@ static void assemble_dest_operand(struct instruction *i) {
             i->byte0 |= DIMM;
             return;
         /* ALU operations*/
+        case LDP:
+            i->byte0 |= SREG(i->l_operand.value.reg);
+            return;
 	case SUB:
 	case SBC:
 	case CMP:
@@ -351,6 +362,8 @@ static void assemble_src_operand(struct instruction *i) {
         case JC:
             i->byte0 |= 0b000;
             return;
+        case LDP:
+            return;
     }
 }
 
@@ -392,6 +405,9 @@ static void assemble_alu_instruction(struct instruction *i) {
 	    return;
 	case NOT:
 	    i->byte0 |= ALU(false, 0b111);
+	    return;
+	case LDP:
+	    i->byte0 |= ALU(true, 0b100);
 	    return;
     }
 }
@@ -478,6 +494,9 @@ static void print_mnemonic(enum mnemonic mnemonic) {
 		printf("JO ");
 		break;
 	case LOD:
+		printf("LOD ");
+		break;
+	case LDP:
 		printf("LOD ");
 		break;
 	case OUM:
@@ -619,29 +638,49 @@ static void print_instruction(struct instruction *i) {
 }
 
 
-static void output_instruction(struct instruction *i) {
+static void output_instruction(struct instruction *i, int header_style, int islast) {
 
-    printf("%03d [", i->address);
+    printf(header_style ? "    /* %03d */ 0b" : "%03d [", i->address);
     print_binary(i->address);
-    printf("] ");
+    printf(header_style ? ", 0b" : "] ");
     print_binary(i->byte0);
+    if (header_style && (!islast || i->length > 1)) {
+
+        printf(",");
+    }
     printf(" //\t");
     print_instruction(i);
     if (i->length == 2) {
 
-        printf("%03d [", i->address+1);
-    	print_binary(i->address+1);
-    	printf("] ");
+        printf(header_style ? "    /* %03d */ 0b" : "%03d [", i->address+1);
+        print_binary(i->address+1);
+        printf(header_style ? ", 0b" : "] ");
     	print_binary(i->byte1);
+        if (header_style && !islast) {
+
+            printf(",");
+        }
     	printf("\n");
     }
 }
 
-void output_program() {
+void output_program(int argc, char **argv) {
+
+    int header_style = ((argc > 1) && !strcmp(argv[1],"-h"));
+
+    if (header_style) {
+    
+        printf("byte pgm[] = {\n    0b00000000,   // length byte\n");
+    }
 
     for (int c=0; c < instruction_count; c++) {
 
-        output_instruction(&instructions[c]);
+        output_instruction(&instructions[c], header_style, c==(instruction_count -1));
+    }
+    
+    if (header_style) {
+    
+        printf("};\n");
     }
 }
 

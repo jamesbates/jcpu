@@ -6,7 +6,7 @@
 		sto [#prime_count], sp
 		call #main
 		hlt
-
+;		jmp #0
 
 
 .org 32

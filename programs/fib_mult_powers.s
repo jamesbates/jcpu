@@ -83,6 +83,6 @@ pow_cont:	add Rc,Rb
 		jc #pow_next
 		jmp #pow_l_mult
 
-	.org 255
+	.org 127
 ; Change this to select a different programme to run in a continuous loop
 progno:		#0		;255 [11111111]: 00000000

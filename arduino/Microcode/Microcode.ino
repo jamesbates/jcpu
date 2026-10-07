@@ -88,6 +88,7 @@
 #define Rb  0b001
 #define Rc  0b010
 #define Rd  0b011
+#undef SP
 #define SP  0b100
 #define PC  0b101
 #define SPi 0b110
@@ -511,12 +512,14 @@ void write_ALU_instructions(uint8_t rom_no) {
   }
   Serial.println(". done.");
 
-  Serial.println("Written 60 ALU instructions.");
-  Serial.print("Writing HLT to currently unused instructions (4 total): XORC .");
-  for (uint8_t reg = Ra; reg <= Rd; reg++) {
-    write_instruction(ALU_OPCODE(true, A_XOR_B, reg), MICROCODE1(_HLT), rom_no);
+  Serial.print("Writing LDP reg, [Rc] instructions .");
+  for (uint8_t dreg = Ra; dreg <= Rd; dreg++) {
+    write_instruction(ALU_OPCODE(true, A_XOR_B, dreg), MICROCODE2(_RcE | _MAW, PGM | _ME | _W(dreg)), rom_no);
   }
   Serial.println(". done.");
+
+  
+  Serial.println("Written 64 ALU instructions.");
 }
 #endif
 

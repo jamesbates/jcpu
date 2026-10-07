@@ -22,11 +22,12 @@ int yywrap()
         return 1;
 } 
   
-int main(void)
+int main(int argc, char **argv)
 {
         yyparse();
 	assemble_program();
-	output_program();
+	output_program(argc, argv);
+	return 0;
 } 
 
 %}

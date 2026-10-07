@@ -85,6 +85,10 @@ enum mnemonic mnemonic(char *name) {
 
         return LOD;
     }
+    if (strcmp("ldp",name)==0) {
+
+        return LDP;
+    }
     if (strcmp("oum",name)==0) {
 
         return OUM;
